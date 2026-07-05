@@ -75,7 +75,7 @@ export default function NewChallanPage() {
                 Deduct from Driver
               </label>
               <p className="text-sm text-muted-foreground">
-                Mark this fine to be deducted from the driver's next settlement
+                Mark this fine to be deducted from the driver&apos;s next settlement
               </p>
             </div>
           </div>

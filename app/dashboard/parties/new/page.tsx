@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { partySchema } from "@/lib/validations/master";
+import { z } from "zod";
 import { upsertParty } from "@/actions/masters";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionPanel } from "@/components/shared/section-panel";
@@ -17,7 +18,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function NewPartyPage() {
   const router = useRouter();
-  const { register, handleSubmit, setValue, formState: { isSubmitting, errors } } = useForm({
+  const { register, handleSubmit, setValue, formState: { isSubmitting, errors } } = useForm<z.infer<typeof partySchema>>({
     resolver: zodResolver(partySchema),
     defaultValues: { type: "customer" }
   });

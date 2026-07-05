@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getSessionContext } from "@/lib/auth/session";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionPanel } from "@/components/shared/section-panel";
@@ -71,7 +72,7 @@ export default async function DashboardPage() {
   const companyId = ctx!.effectiveCompanyId!;
 
   // DRIVER MOBILE VIEW
-  if (ctx?.user?.role === "driver") {
+  if (ctx?.role === "driver") {
     // Find the active trip for this driver (assigned or in_transit)
     // NOTE: In a real app we'd map user_id -> driver_id. For demo, we just get their latest active trip
     const { data: activeTrip } = await supabase

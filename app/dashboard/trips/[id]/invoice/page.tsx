@@ -154,7 +154,7 @@ export default async function InvoicePage({
         
         <div className="mt-16 grid grid-cols-2 text-sm text-slate-500 font-medium">
           <div>
-            Receiver's Signature / Stamp
+            Receiver&apos;s Signature / Stamp
             <div className="mt-1 text-xs text-slate-400">(Proof of Delivery)</div>
           </div>
           <div className="text-right">
