@@ -94,8 +94,7 @@
   }
 
   .nav-item {
-    @apply flex min-h-10 items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground outline-none transition-[color,background] duration-200 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 max-lg:min-h-11;
-    opacity: 0.85;
+    @apply flex relative min-h-11 items-center gap-3 rounded-r-full rounded-l-xl pl-5 pr-4 py-2 text-[14px] font-medium text-slate-600 outline-none transition-all duration-200 ease-out hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 max-lg:min-h-11 mr-4 ml-2;
     transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
   }
 
@@ -105,7 +104,7 @@
   }
 
   .nav-item-active {
-    @apply bg-primary font-semibold text-primary-foreground;
+    @apply bg-blue-100/70 font-semibold text-blue-600 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[5px] before:bg-blue-600 before:rounded-l-xl;
   }
 
   .data-table-wrap {

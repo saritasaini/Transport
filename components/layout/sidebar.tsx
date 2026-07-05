@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  LayoutGrid,
   Route,
+  User,
   Users,
   Truck,
   Building2,
@@ -19,6 +21,8 @@ import {
   PanelLeftClose,
   PanelLeft,
   Shield,
+  ChevronsLeft,
+  ChevronsRight,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,18 +31,19 @@ import { MODULE_LABELS, MODULE_ROUTES, NAV_GROUPS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 const ICONS: Partial<Record<AppModule, LucideIcon>> = {
-  dashboard: LayoutDashboard,
+  dashboard: LayoutGrid,
   trips: Route,
-  drivers: Users,
+  drivers: User,
   vehicles: Truck,
+  challans: FileSpreadsheet,
   parties: Building2,
   expenses: Receipt,
   payments: CreditCard,
   rentals: ArrowLeftRight,
   reports: BarChart3,
   notifications: Bell,
-  branches: Settings,
-  users: Users,
+  branches: Building2, 
+  users: Users, 
   tally: FileSpreadsheet,
   recovery: Archive,
 };
@@ -62,7 +67,7 @@ export function NavContent({
   })).filter((g) => g.items.length > 0);
 
   return (
-    <nav className="flex-1 overflow-y-auto px-2 py-3">
+    <nav className="flex-1 overflow-y-auto py-4">
       {showPlatformLink && (
         <div className="mb-4">
           <Link
@@ -73,36 +78,50 @@ export function NavContent({
             )}
             onClick={onNavigate}
           >
-            <Shield className="h-4 w-4 shrink-0 opacity-80" />
+            <Shield className="h-5 w-5 shrink-0" />
             {!collapsed && <span>Platform</span>}
           </Link>
         </div>
       )}
       {groups.map((group) => (
-        <div key={group.label} className="mb-4 last:mb-0">
+        <div key={group.label} className="mb-6 last:mb-0">
           {!collapsed && (
-            <p className="mb-1.5 px-2.5 text-2xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+            <p className="mb-3 px-6 text-xs font-bold uppercase tracking-wider text-slate-500">
               {group.label}
             </p>
           )}
-          <ul className="space-y-0.5">
+          <ul className="space-y-1">
             {group.items.map((mod) => {
               const href = MODULE_ROUTES[mod];
               const Icon = ICONS[mod] ?? LayoutDashboard;
               const active =
-                pathname === href || pathname.startsWith(href + "/");
+                href === "/dashboard" 
+                  ? pathname === href 
+                  : pathname === href || pathname.startsWith(href + "/");
+              
+              const isNotifications = mod === 'notifications';
+              
               return (
                 <li key={mod}>
                   <Link
                     href={href}
-                    className={cn("nav-item", active && "nav-item-active")}
+                    className={cn(
+                      "nav-item",
+                      active && "nav-item-active",
+                      collapsed && "mx-3 px-0 justify-center rounded-xl before:rounded-xl"
+                    )}
                     title={MODULE_LABELS[mod]}
                     aria-current={active ? "page" : undefined}
                     onClick={onNavigate}
                   >
-                    <Icon className="h-4 w-4 shrink-0 opacity-80" />
+                    <Icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-blue-600" : "text-slate-500")} strokeWidth={active ? 2 : 1.5} />
                     {!collapsed && (
-                      <span className="truncate">{MODULE_LABELS[mod]}</span>
+                      <span className="flex-1 truncate">{MODULE_LABELS[mod]}</span>
+                    )}
+                    {!collapsed && isNotifications && (
+                      <div className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-600 ml-auto">
+                        9+
+                      </div>
                     )}
                   </Link>
                 </li>
@@ -124,37 +143,47 @@ function SidebarHeader({
   onToggleCollapse?: () => void;
   showCollapse?: boolean;
 }) {
-  return (
-    <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-3">
-      <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground"
-        aria-hidden
-      >
-        <Truck className="h-4 w-4" />
+  if (collapsed) {
+    return (
+      <div className="flex h-16 items-center justify-center border-b border-sidebar-border py-2">
+        <button
+          onClick={onToggleCollapse}
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+          aria-label="Expand sidebar"
+        >
+          <Truck className="h-5 w-5" strokeWidth={2} />
+        </button>
       </div>
-      {!collapsed && (
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-sidebar-accent-foreground">
+    );
+  }
+
+  return (
+    <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4 py-2">
+      <div className="flex items-center gap-3 min-w-0">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm"
+          aria-hidden
+        >
+          <Truck className="h-5 w-5" strokeWidth={2} />
+        </div>
+        <div className="min-w-0 flex-1 flex flex-col justify-center">
+          <p className="truncate text-[15px] font-bold leading-tight text-slate-900">
             Fleet Control
           </p>
-          <p className="truncate text-2xs text-sidebar-foreground/70">
+          <p className="truncate text-[13px] text-slate-500 font-medium">
             Transport ops
           </p>
         </div>
-      )}
+      </div>
       {showCollapse && onToggleCollapse && (
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="h-8 w-8 shrink-0 text-slate-400 hover:bg-slate-100 hover:text-slate-600 ml-1"
           onClick={onToggleCollapse}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label="Collapse sidebar"
         >
-          {collapsed ? (
-            <PanelLeft className="h-4 w-4" />
-          ) : (
-            <PanelLeftClose className="h-4 w-4" />
-          )}
+          <ChevronsLeft className="h-5 w-5" />
         </Button>
       )}
     </div>
@@ -179,8 +208,8 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "hidden h-screen flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-out lg:flex",
-        collapsed ? "w-[4.25rem]" : "w-60"
+        "hidden h-screen flex-col border-r border-sidebar-border bg-white transition-[width] duration-200 ease-out lg:flex",
+        collapsed ? "w-[4.5rem]" : "w-64"
       )}
     >
       <SidebarHeader

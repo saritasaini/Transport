@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { getSessionContext } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/shared/page-header";
@@ -8,7 +9,8 @@ import { KpiStrip } from "@/components/shared/kpi-strip";
 import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
 import { FleetUtilizationChart } from "@/components/charts/fleet-utilization";
 import { RecentTripsTable } from "@/components/tables/recent-trips";
-import { FileWarning, ShieldCheck, Truck, Clock, CheckCircle2, Navigation, User, Wallet, FileText } from "lucide-react";
+import { FileWarning, ShieldCheck, Truck, Clock, CheckCircle2, Navigation, User, Wallet, FileText, Info, ChevronDown, ChevronRight, CheckSquare, Route, ArrowUpRight, Calendar, MoreVertical } from "lucide-react";
+import { DashboardDatePicker } from "@/components/shared/dashboard-date-picker";
 
 type ExpiryVehicle = {
   registration_number: string;
@@ -18,23 +20,142 @@ type ExpiryVehicle = {
 };
 
 function getExpiryItems(v: ExpiryVehicle, cutoff: string) {
-  const items: { label: string; date: string }[] = [];
-  if (v.insurance_expiry && v.insurance_expiry <= cutoff) {
-    items.push({ label: "Insurance", date: v.insurance_expiry });
-  }
-  if (v.fitness_expiry && v.fitness_expiry <= cutoff) {
-    items.push({ label: "Fitness", date: v.fitness_expiry });
-  }
-  if (v.permit_expiry && v.permit_expiry <= cutoff) {
-    items.push({ label: "Permit", date: v.permit_expiry });
-  }
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const items: { label: string; date: string; status: 'expired' | 'expiring_soon' | 'valid' }[] = [];
+  
+  const checkExpiry = (label: string, date: string | null) => {
+    if (!date) return;
+    if (date < todayStr) {
+      items.push({ label, date, status: 'expired' });
+    } else if (date <= cutoff) {
+      items.push({ label, date, status: 'expiring_soon' });
+    } else {
+      items.push({ label, date, status: 'valid' });
+    }
+  };
+
+  checkExpiry("Insurance", v.insurance_expiry);
+  checkExpiry("Fitness", v.fitness_expiry);
+  checkExpiry("Permit", v.permit_expiry);
+  
   return items;
 }
+
+const RoadIcon = ({ className, strokeWidth = 2, ...props }: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="m6 22 4-16" />
+    <path d="m18 22-4-16" />
+    <path d="M12 22v-3" />
+    <path d="M12 15v-3" />
+    <path d="M12 8v-2" />
+  </svg>
+);
+
+import { ExpenseUploadForm } from "@/components/driver/expense-upload-form";
+import { PodUploadForm } from "@/components/driver/pod-upload-form";
+import { MapPin } from "lucide-react";
 
 export default async function DashboardPage() {
   const ctx = await getSessionContext();
   const supabase = await createClient();
   const companyId = ctx!.effectiveCompanyId!;
+
+  // DRIVER MOBILE VIEW
+  if (ctx?.user?.role === "driver") {
+    // Find the active trip for this driver (assigned or in_transit)
+    // NOTE: In a real app we'd map user_id -> driver_id. For demo, we just get their latest active trip
+    const { data: activeTrip } = await supabase
+      .from("trips")
+      .select("*, vehicle:vehicles(registration_number)")
+      .eq("company_id", companyId)
+      .in("status", ["assigned", "in_transit"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    return (
+      <div className="space-y-6 max-w-md mx-auto pb-20">
+        <PageHeader 
+          title="Driver Portal" 
+          description="Manage your active trips and expenses" 
+        />
+        
+        {!activeTrip ? (
+          <EmptyState
+            icon={Truck}
+            title="No Active Trip"
+            description="You don't have any trips assigned currently."
+            className="mt-6"
+          />
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl shadow-sm ring-1 ring-slate-200 overflow-hidden">
+              <div className="bg-blue-600 px-4 py-3 text-white flex justify-between items-center">
+                <span className="font-bold">{activeTrip.trip_number}</span>
+                <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium backdrop-blur-sm uppercase">
+                  {activeTrip.status.replace("_", " ")}
+                </span>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center gap-1 mt-1">
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-300 ring-2 ring-white"></div>
+                    <div className="w-0.5 h-6 bg-slate-200"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-white"></div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <div className="text-xs text-slate-500 font-medium">Origin</div>
+                      <div className="font-semibold text-slate-900">{activeTrip.origin}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 font-medium">Destination</div>
+                      <div className="font-semibold text-slate-900">{activeTrip.destination}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                  <div>
+                    <div className="text-xs text-slate-500">Vehicle</div>
+                    <div className="font-medium">{activeTrip.vehicle?.registration_number ?? "—"}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-500">Date</div>
+                    <div className="font-medium">{formatDateIN(activeTrip.trip_date)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <ExpenseUploadForm tripId={activeTrip.id} />
+              <Button className="w-full flex items-center gap-2" variant="outline">
+                <MapPin className="w-4 h-4" />
+                Navigate
+              </Button>
+            </div>
+            
+            <div className="pt-2">
+              <PodUploadForm tripId={activeTrip.id} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ADMIN DESKTOP VIEW
 
   const today = new Date().toISOString().slice(0, 10);
   const monthStart = new Date();
@@ -135,31 +256,101 @@ export default async function DashboardPage() {
     ) ?? [];
 
   const kpis = [
-    { label: "Active trips", value: activeTrips ?? 0 },
-    { label: "Pending", value: pendingTrips ?? 0 },
-    { label: "Completed today", value: completedToday ?? 0 },
-    { label: "On road", value: vehiclesOnRoad ?? 0 },
-    { label: "Drivers free", value: availableDrivers ?? 0 },
+    { 
+      label: "Active Trips", 
+      value: activeTrips ?? 0, 
+      icon: Truck, 
+      iconColor: "blue" as const 
+    },
+    { 
+      label: "Pending", 
+      value: pendingTrips ?? 0, 
+      icon: Clock, 
+      iconColor: "orange" as const 
+    },
+    { 
+      label: "Completed Today", 
+      value: completedToday ?? 0, 
+      icon: CheckSquare, 
+      iconColor: "green" as const 
+    },
+    { 
+      label: "On Road", 
+      value: vehiclesOnRoad ?? 0, 
+      icon: RoadIcon, 
+      iconColor: "purple" as const 
+    },
+    { 
+      label: "Drivers Free", 
+      value: availableDrivers ?? 0, 
+      icon: User, 
+      iconColor: "cyan" as const,
+      hint: (
+        <span className="flex items-center justify-center gap-1 text-emerald-600">
+          <ArrowUpRight className="h-3 w-3" strokeWidth={3} /> {availableDrivers} available
+        </span>
+      )
+    },
     {
-      label: "Month in / out",
+      label: "Month In / Out",
       value: formatCurrencyINR(monthlyIncome),
       hint: `Expenses ${formatCurrencyINR(monthlyExpenses)}`,
+      icon: Wallet,
+      iconColor: "blue" as const
     },
     {
       label: "Outstanding",
       value: formatCurrencyINR(outstanding),
+      icon: FileText,
+      iconColor: "orange" as const
     },
   ];
 
+  const currentDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" description="Fleet operations overview" />
+      <PageHeader 
+        title="Dashboard" 
+        description="Fleet operations overview" 
+        action={
+          <div className="flex items-center gap-3">
+            <DashboardDatePicker />
+            <button className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 shadow-sm transition-colors text-slate-600">
+              <MoreVertical className="h-5 w-5" />
+            </button>
+          </div>
+        }
+      />
       <KpiStrip items={kpis} className="lg:grid-cols-7" />
       <div className="grid gap-6 lg:grid-cols-2">
-        <SectionPanel title="Fleet utilization">
+        <SectionPanel 
+          title={
+            <div className="flex items-center gap-1.5">
+              <span>Fleet utilization</span>
+              <Info className="h-4 w-4 text-slate-400" />
+            </div>
+          }
+          action={
+            <div className="flex items-center gap-1 text-sm font-medium text-blue-600 cursor-pointer">
+              This Month <ChevronDown className="h-4 w-4" />
+            </div>
+          }
+        >
           <FleetUtilizationChart vehicles={vehicles ?? []} />
         </SectionPanel>
-        <SectionPanel title="Document expiry (7 days)">
+        <SectionPanel 
+          title="Document expiry (7 days)"
+          action={
+            <Link
+              href="/dashboard/vehicles"
+              className="text-sm font-medium text-blue-600 hover:underline"
+            >
+              View all
+            </Link>
+          }
+          contentClassName="p-4"
+        >
           {expiryAlerts.length === 0 ? (
             <EmptyState
               icon={ShieldCheck}
@@ -169,30 +360,71 @@ export default async function DashboardPage() {
               className="rounded-none border-0 bg-transparent"
             />
           ) : (
-            <ul className="divide-y divide-border/60">
-              {expiryAlerts.map((v) => {
-                const items = getExpiryItems(v, cutoff);
-                return (
-                  <li
-                    key={v.registration_number}
-                    className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <span className="font-medium">{v.registration_number}</span>
-                    <div className="flex flex-wrap gap-2">
-                      {items.map((item) => (
-                        <span
-                          key={item.label}
-                          className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2 py-0.5 text-2xs font-medium text-destructive"
-                        >
-                          <FileWarning className="h-3 w-3" aria-hidden />
-                          {item.label} · {formatDateIN(item.date)}
-                        </span>
-                      ))}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="flex flex-col h-full">
+              <ul className="flex-1 divide-y divide-slate-100">
+                {expiryAlerts.map((v, idx) => {
+                  const items = getExpiryItems(v, cutoff);
+                  
+                  const bgColors = [
+                    "bg-red-100 text-red-500",
+                    "bg-blue-100 text-blue-500",
+                    "bg-purple-100 text-purple-500",
+                    "bg-emerald-100 text-emerald-500",
+                  ];
+                  const iconColor = bgColors[idx % bgColors.length];
+
+                  return (
+                    <li
+                      key={v.registration_number}
+                      className="flex items-center justify-between py-3.5 group hover:bg-slate-50 transition-colors -mx-4 px-4 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn("h-10 w-10 shrink-0 rounded-xl flex items-center justify-center", iconColor)}>
+                          <Truck className="h-5 w-5" />
+                        </div>
+                        <span className="font-bold text-slate-900 text-sm">{v.registration_number}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center hidden sm:flex divide-x divide-slate-100">
+                          {items.map((item) => {
+                            const statusColor = 
+                              item.status === 'expired' ? 'text-red-500' : 
+                              item.status === 'expiring_soon' ? 'text-orange-500' : 
+                              'text-emerald-500';
+
+                            return (
+                              <span
+                                key={item.label}
+                                className={cn("text-xs font-medium px-4 first:pl-0", statusColor)}
+                              >
+                                {item.label} • {formatDateIN(item.date)}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors ml-2" />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              
+              <div className="flex items-center gap-6 mt-2 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span className="text-xs font-medium text-slate-600">Expired</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <span className="text-xs font-medium text-slate-600">Expiring Soon</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  <span className="text-xs font-medium text-slate-600">Valid</span>
+                </div>
+              </div>
+            </div>
           )}
         </SectionPanel>
       </div>

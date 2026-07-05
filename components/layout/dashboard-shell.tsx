@@ -13,6 +13,7 @@ import {
   SheetContent,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { GlobalSearch } from "@/components/layout/global-search";
 
 export function DashboardShell({
   modules,
@@ -27,6 +28,7 @@ export function DashboardShell({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -52,6 +54,7 @@ export function DashboardShell({
         <Navbar
           ctx={ctx}
           unreadCount={unreadCount}
+          onSearchClick={() => setSearchOpen(true)}
           menuTrigger={
             <Button
               variant="ghost"
@@ -68,6 +71,7 @@ export function DashboardShell({
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
   );
 }

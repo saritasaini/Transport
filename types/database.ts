@@ -4,7 +4,8 @@ export type UserRole =
   | "sub_admin"
   | "dispatcher"
   | "accountant"
-  | "fleet_manager";
+  | "fleet_manager"
+  | "driver";
 
 export type PartyType = "customer" | "vendor" | "transporter";
 export type DriverAvailability = "available" | "assigned" | "off_duty";
@@ -42,6 +43,7 @@ export type AppModule =
   | "trips"
   | "drivers"
   | "vehicles"
+  | "challans"
   | "parties"
   | "expenses"
   | "payments"
@@ -164,6 +166,10 @@ export interface Trip {
   advance_paid?: number;
   goods_type?: string | null;
   weight_tons?: number | null;
+  eway_bill_no?: string | null;
+  lr_number?: string | null;
+  pod_received?: boolean;
+  pod_image_url?: string | null;
   hold_reason?: string | null;
   cancel_reason?: string | null;
   scheduled_at?: string | null;
@@ -208,6 +214,12 @@ export interface Bill {
   base_amount: number;
   tax_percent: number;
   tax_amount: number;
+  transporter_gstin?: string | null;
+  customer_gstin?: string | null;
+  cgst_amount?: number;
+  sgst_amount?: number;
+  igst_amount?: number;
+  is_reverse_charge?: boolean;
   total_amount: number;
   paid_amount: number;
   status: BillStatus;
@@ -230,9 +242,33 @@ export interface Payment {
   payment_date: string;
   reference_note: string | null;
   reference_no?: string | null;
+  tds_deducted?: number;
+  tds_certificate_no?: string | null;
+  net_received?: number;
   created_by: string | null;
   deleted_at: string | null;
   created_at: string;
+}
+
+export interface Challan {
+  id: string;
+  company_id: string;
+  vehicle_id: string;
+  driver_id: string | null;
+  trip_id: string | null;
+  challan_no: string;
+  amount: number;
+  issue_date: string;
+  status: 'pending' | 'paid' | 'contested';
+  deduct_from_driver: boolean;
+  notes: string | null;
+  created_by: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  vehicle?: Vehicle;
+  driver?: Driver;
+  trip?: Trip;
 }
 
 export interface Notification {

@@ -22,7 +22,7 @@ export const NAV_GROUPS: { label: string; modules: AppModule[] }[] = [
   { label: "Overview", modules: ["dashboard"] },
   {
     label: "Operations",
-    modules: ["trips", "drivers", "vehicles", "parties", "expenses"],
+    modules: ["trips", "drivers", "vehicles", "challans", "parties", "expenses"],
   },
   {
     label: "Finance",
@@ -36,12 +36,12 @@ export const NAV_GROUPS: { label: string; modules: AppModule[] }[] = [
 
 export const ROLE_DEFAULT_MODULES: Record<UserRole, AppModule[]> = {
   super_admin: [
-    "dashboard", "trips", "drivers", "vehicles", "parties", "expenses",
+    "dashboard", "trips", "drivers", "vehicles", "challans", "parties", "expenses",
     "payments", "rentals", "reports", "notifications", "branches", "users",
     "tally", "recovery",
   ],
   transporter_admin: [
-    "dashboard", "trips", "drivers", "vehicles", "parties", "expenses",
+    "dashboard", "trips", "drivers", "vehicles", "challans", "parties", "expenses",
     "payments", "rentals", "reports", "notifications", "branches", "users",
     "tally", "recovery",
   ],
@@ -49,6 +49,7 @@ export const ROLE_DEFAULT_MODULES: Record<UserRole, AppModule[]> = {
   dispatcher: ["dashboard", "trips", "drivers", "vehicles", "expenses", "notifications"],
   accountant: ["dashboard", "payments", "expenses", "reports", "tally", "parties", "notifications"],
   fleet_manager: ["dashboard", "vehicles", "drivers", "reports", "notifications"],
+  driver: ["dashboard", "trips", "expenses"],
 };
 
 export const MODULE_ROUTES: Record<AppModule, string> = {
@@ -56,6 +57,7 @@ export const MODULE_ROUTES: Record<AppModule, string> = {
   trips: "/dashboard/trips",
   drivers: "/dashboard/drivers",
   vehicles: "/dashboard/vehicles",
+  challans: "/dashboard/challans",
   parties: "/dashboard/parties",
   expenses: "/dashboard/expenses",
   payments: "/dashboard/payments",
@@ -73,6 +75,7 @@ export const MODULE_LABELS: Record<AppModule, string> = {
   trips: "Trips",
   drivers: "Drivers",
   vehicles: "Vehicles",
+  challans: "Traffic Challans",
   parties: "Customers & Parties",
   expenses: "Expenses",
   payments: "Payments",

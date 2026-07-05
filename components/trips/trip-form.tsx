@@ -56,7 +56,7 @@ export function TripForm({
       return;
     }
     toast.success("Trip created");
-    router.push(`/dashboard/trips/${result.data?.id}`);
+    router.push(`/dashboard/trips`);
     router.refresh();
   }
 
@@ -85,7 +85,7 @@ export function TripForm({
           <Label>Vehicle (available)</Label>
           <Select onValueChange={(v) => setValue("vehicle_id", v)}>
             <SelectTrigger>
-              <SelectValue placeholder="Optional" />
+              <SelectValue placeholder="Select free vehicle..." />
             </SelectTrigger>
             <SelectContent>
               {vehicles.map((v) => (
@@ -100,7 +100,7 @@ export function TripForm({
           <Label>Driver (available)</Label>
           <Select onValueChange={(v) => setValue("driver_id", v)}>
             <SelectTrigger>
-              <SelectValue placeholder="Optional" />
+              <SelectValue placeholder="Select free driver..." />
             </SelectTrigger>
             <SelectContent>
               {drivers.map((d) => (

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getSessionContext } from "@/lib/auth/session";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -35,6 +37,11 @@ export default async function PartiesPage() {
           icon={Building2}
           title={`No ${label}`}
           description={`Add ${label} to link trips and payments.`}
+          action={
+            <Button asChild variant="outline">
+              <Link href="/dashboard/parties/new">Add {label.slice(0, -1)}</Link>
+            </Button>
+          }
           compact
         />
       );
@@ -68,6 +75,11 @@ export default async function PartiesPage() {
       <PageHeader
         title="Customers & Parties"
         description="Customers and vendors linked to trips and billing"
+        action={
+          <Button asChild>
+            <Link href="/dashboard/parties/new">Add Party</Link>
+          </Button>
+        }
       />
       <SectionPanel title="Party directory" contentClassName="p-4 pt-0">
         <Tabs defaultValue="customers">

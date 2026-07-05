@@ -8,7 +8,7 @@ export function SectionPanel({
   className,
   contentClassName,
 }: {
-  title: string;
+  title: React.ReactNode;
   description?: string;
   action?: React.ReactNode;
   children: React.ReactNode;

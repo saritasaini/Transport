@@ -7,6 +7,7 @@ import { SectionPanel } from "@/components/shared/section-panel";
 import { DataTableShell } from "@/components/shared/data-table-shell";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 import type { TripStatus } from "@/types/database";
 import { TripStatusActions } from "@/components/trips/trip-status-actions";
 import {
@@ -17,6 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 
 export default async function TripDetailPage({
   params,
@@ -64,7 +69,17 @@ export default async function TripDetailPage({
       <PageHeader
         title={trip.trip_number}
         description={`${trip.origin} → ${trip.destination}`}
-        action={<TripStatusBadge status={trip.status as TripStatus} />}
+        action={
+          <div className="flex items-center gap-3">
+            <TripStatusBadge status={trip.status as TripStatus} />
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/dashboard/trips/${id}/invoice`}>
+                <FileText className="mr-2 h-4 w-4" />
+                View Invoice
+              </Link>
+            </Button>
+          </div>
+        }
       />
       <div className="grid gap-6 lg:grid-cols-3">
         <SectionPanel title="Trip details" className="lg:col-span-2">
@@ -104,6 +119,28 @@ export default async function TripDetailPage({
               <dd className="mt-0.5 tabular-nums">{trip.distance_covered ?? "—"} km</dd>
             </div>
             <div>
+              <dt className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">E-Way Bill</dt>
+              <dd className="mt-0.5 font-mono text-sm">{trip.eway_bill_no ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">LR Number</dt>
+              <dd className="mt-0.5 font-mono text-sm">{trip.lr_number ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">POD Status</dt>
+              <dd className="mt-0.5">
+                {trip.pod_received ? (
+                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                    Received
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                    Pending
+                  </span>
+                )}
+              </dd>
+            </div>
+            <div>
               <dt className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">Bill</dt>
               <dd className="mt-0.5 tabular-nums font-semibold">{formatCurrencyINR(trip.bill_amount)}</dd>
             </div>
@@ -122,21 +159,49 @@ export default async function TripDetailPage({
           />
         </SectionPanel>
       </div>
-      <SectionPanel title="Status timeline">
-        {(history ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">No status changes recorded.</p>
-        ) : (
-          <ul className="space-y-2 text-sm">
-            {(history ?? []).map((h) => (
-              <li key={h.id} className="flex flex-wrap gap-x-2">
-                <span className="text-muted-foreground">{h.from_status ?? "—"} →</span>
-                <span className="font-medium">{h.to_status}</span>
-                <span className="text-muted-foreground">· {formatDateIN(h.created_at)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionPanel>
+      <div className="grid gap-6 lg:grid-cols-4 mb-6">
+        <SectionPanel title="Financial P&L" className="lg:col-span-1 bg-slate-50 border-blue-100">
+          <div className="flex flex-col gap-4">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Income (Freight)</div>
+              <div className="text-lg font-bold text-slate-900">{formatCurrencyINR(trip.freight_amount ?? trip.bill_amount)}</div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Total Expenses</div>
+              <div className="text-lg font-bold text-red-600">
+                - {formatCurrencyINR(expenseRows.reduce((acc, e) => acc + Number(e.amount), 0))}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-slate-200">
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-1">Net Profit</div>
+              <div className={cn(
+                "text-2xl font-black",
+                (trip.freight_amount ?? trip.bill_amount) - expenseRows.reduce((acc, e) => acc + Number(e.amount), 0) >= 0 
+                  ? "text-green-600" 
+                  : "text-red-600"
+              )}>
+                {formatCurrencyINR((trip.freight_amount ?? trip.bill_amount) - expenseRows.reduce((acc, e) => acc + Number(e.amount), 0))}
+              </div>
+            </div>
+          </div>
+        </SectionPanel>
+        
+        <SectionPanel title="Status timeline" className="lg:col-span-3">
+          {(history ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No status changes recorded.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {(history ?? []).map((h) => (
+                <li key={h.id} className="flex flex-wrap gap-x-2">
+                  <span className="text-muted-foreground">{h.from_status ?? "—"} →</span>
+                  <span className="font-medium">{h.to_status}</span>
+                  <span className="text-muted-foreground">· {formatDateIN(h.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionPanel>
+      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <SectionPanel title="Expenses" contentClassName="p-0">
           {expenseRows.length === 0 ? (
@@ -171,14 +236,22 @@ export default async function TripDetailPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
+                    <TableHead>Total Amount</TableHead>
+                    <TableHead>Net Received</TableHead>
+                    <TableHead>TDS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paymentRows.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="tabular-nums">{formatDateIN(p.payment_date)}</TableCell>
-                      <TableCell className="tabular-nums">{formatCurrencyINR(p.amount)}</TableCell>
+                      <TableCell className="tabular-nums font-semibold">{formatCurrencyINR(p.amount)}</TableCell>
+                      <TableCell className="tabular-nums text-green-600 font-medium">
+                        {formatCurrencyINR(p.net_received ?? p.amount)}
+                      </TableCell>
+                      <TableCell className="tabular-nums text-red-500">
+                        {p.tds_deducted ? formatCurrencyINR(p.tds_deducted) : "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

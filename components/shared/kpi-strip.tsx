@@ -7,7 +7,7 @@ export type KpiItem = {
   label: string;
   value: string | number;
   hint?: React.ReactNode;
-  icon?: LucideIcon;
+  icon?: React.ElementType;
   iconColor?: KpiColor;
 };
 
@@ -25,36 +25,38 @@ export function KpiStrip({ items, className }: { items: KpiItem[]; className?: s
     <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
       <dl
         className={cn(
-          "flex w-max gap-4",
+          "flex w-max lg:w-full lg:grid gap-3",
           className
         )}
       >
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex min-w-[14rem] items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm"
+            className="flex flex-col rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm min-w-[11rem] lg:min-w-0"
           >
-            {item.icon && (
-              <div
-                className={cn(
-                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
-                  item.iconColor ? colorMap[item.iconColor] : "bg-muted text-muted-foreground"
-                )}
-              >
-                <item.icon className="h-6 w-6" strokeWidth={1.5} />
+            <div className="flex items-center gap-3">
+              {item.icon && (
+                <div
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+                    item.iconColor ? colorMap[item.iconColor] : "bg-slate-50 text-slate-500"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" strokeWidth={2} />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <dt className="text-xs font-semibold text-slate-500 truncate">
+                  {item.label}
+                </dt>
+                <dd className="text-2xl font-bold tracking-tight text-slate-900 leading-none mt-1">
+                  {item.value}
+                </dd>
               </div>
-            )}
-            <div className="flex flex-col gap-1">
-              <dt className="text-sm font-medium text-muted-foreground">
-                {item.label}
-              </dt>
-              <dd className="text-2xl font-bold tracking-tight text-foreground">
-                {item.value}
-              </dd>
-              <dd className="text-xs text-muted-foreground min-h-[1rem]">
-                {item.hint || "—"}
-              </dd>
             </div>
+            <dd className="mt-3 text-center text-xs font-medium text-slate-400">
+              {item.hint || "—"}
+            </dd>
           </div>
         ))}
       </dl>
