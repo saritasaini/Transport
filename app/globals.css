@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #F8FAFC;
+    --foreground: #111827;
+    --card: #FFFFFF;
+    --card-foreground: #111827;
+    --popover: #FFFFFF;
+    --popover-foreground: #111827;
+    --primary: #2563EB;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F8FAFC;
+    --secondary-foreground: #111827;
+    --muted: #F3F4F6;
+    --muted-foreground: #6B7280;
+    --accent: #DBEAFE;
+    --accent-foreground: #1D4ED8;
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    --border: #E5E7EB;
+    --input: #E5E7EB;
+    --ring: #2563EB;
+    --radius: 0.25rem;
+
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #6B7280;
+    --sidebar-border: #E5E7EB;
+    --sidebar-accent: #DBEAFE;
+    --sidebar-accent-foreground: #1D4ED8;
+
+    --chart-1: #2563EB;
+    --chart-2: #3B82F6;
+    --chart-3: #22C55E;
+    --chart-4: #F59E0B;
+    --chart-5: #6B7280;
+
+    --status-pending: #FEF3C7;
+    --status-pending-fg: #F59E0B;
+    --status-assigned: #E0F2FE;
+    --status-assigned-fg: #3B82F6;
+    --status-in-transit: #DBEAFE;
+    --status-in-transit-fg: #2563EB;
+    --status-hold: #FEE2E2;
+    --status-hold-fg: #EF4444;
+    --status-cancelled: #FEE2E2;
+    --status-cancelled-fg: #EF4444;
+    --status-completed: #DCFCE7;
+    --status-completed-fg: #22C55E;
+
+    --space-1: 0.5rem;
+    --text-page-title: clamp(1.25rem, 1.1rem + 0.5vw, 1.75rem);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .text-page-title {
+    font-size: var(--text-page-title);
+  }
+
+  .surface-panel {
+    @apply rounded-md border bg-card;
+  }
+
+  .surface-section {
+    @apply rounded-md border bg-card;
+  }
+
+  .nav-item {
+    @apply flex min-h-10 items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground outline-none transition-[color,background] duration-200 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 max-lg:min-h-11;
+    opacity: 0.85;
+    transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .nav-item:hover,
+  .nav-item-active {
+    opacity: 1;
+  }
+
+  .nav-item-active {
+    @apply bg-primary font-semibold text-primary-foreground;
+  }
+
+  .data-table-wrap {
+    @apply overflow-x-auto;
+  }
+}
