@@ -22,17 +22,17 @@ const colorMap: Record<KpiColor, string> = {
 /** Dashboard KPI cards with left icon and right text */
 export function KpiStrip({ items, className }: { items: KpiItem[]; className?: string }) {
   return (
-    <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
+    <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0 pb-4">
       <dl
         className={cn(
-          "flex w-max lg:w-full lg:grid gap-3",
+          "flex flex-nowrap md:flex-wrap gap-4",
           className
         )}
       >
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex flex-col rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm min-w-[11rem] lg:min-w-0"
+            className="flex flex-col rounded-2xl border border-slate-100 bg-white p-3.5 shadow-sm min-w-[12rem] flex-auto"
           >
             <div className="flex items-center gap-3">
               {item.icon && (

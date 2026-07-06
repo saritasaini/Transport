@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SectionPanel } from "@/components/shared/section-panel";
 import { EmptyState } from "@/components/shared/empty-state";
 import { KpiStrip } from "@/components/shared/kpi-strip";
-import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
+import { formatCurrencyINR, formatCurrencyCompactINR, formatDateIN } from "@/lib/utils/format";
 import { FleetUtilizationChart } from "@/components/charts/fleet-utilization";
 import { RecentTripsTable } from "@/components/tables/recent-trips";
 import { FileWarning, ShieldCheck, Truck, Clock, CheckCircle2, Navigation, User, Wallet, FileText, Info, ChevronDown, ChevronRight, CheckSquare, Route, ArrowUpRight, Calendar, MoreVertical } from "lucide-react";
@@ -294,14 +294,14 @@ export default async function DashboardPage() {
     },
     {
       label: "Month In / Out",
-      value: formatCurrencyINR(monthlyIncome),
-      hint: `Expenses ${formatCurrencyINR(monthlyExpenses)}`,
+      value: formatCurrencyCompactINR(monthlyIncome),
+      hint: `Expenses ${formatCurrencyCompactINR(monthlyExpenses)}`,
       icon: Wallet,
       iconColor: "blue" as const
     },
     {
       label: "Outstanding",
-      value: formatCurrencyINR(outstanding),
+      value: formatCurrencyCompactINR(outstanding),
       icon: FileText,
       iconColor: "orange" as const
     },
@@ -323,7 +323,7 @@ export default async function DashboardPage() {
           </div>
         }
       />
-      <KpiStrip items={kpis} className="lg:grid-cols-7" />
+      <KpiStrip items={kpis} />
       <div className="grid gap-6 lg:grid-cols-2">
         <SectionPanel 
           title={

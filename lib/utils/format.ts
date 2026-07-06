@@ -17,6 +17,20 @@ export function formatCurrencyINR(amount: number | null | undefined): string {
   }).format(n);
 }
 
+export function formatCurrencyCompactINR(amount: number | null | undefined): string {
+  const n = amount ?? 0;
+  if (Math.abs(n) >= 10000000) {
+    return `₹${(n / 10000000).toFixed(2)}Cr`;
+  }
+  if (Math.abs(n) >= 100000) {
+    return `₹${(n / 100000).toFixed(2)}L`;
+  }
+  if (Math.abs(n) >= 1000) {
+    return `₹${(n / 1000).toFixed(2)}K`;
+  }
+  return `₹${n.toFixed(2)}`;
+}
+
 export function daysUntil(dateStr: string | null): number | null {
   if (!dateStr) return null;
   const d = parseISO(dateStr);
