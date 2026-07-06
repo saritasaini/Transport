@@ -17,6 +17,8 @@ export async function GET(
 
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") ?? "xlsx";
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
   const supabase = await createClient();
   let rows: Record<string, any>[] = [];
@@ -54,11 +56,15 @@ export async function GET(
       break;
 
     case "expense":
-      const { data: expenses } = await supabase
+      let expQuery = supabase
         .from("trip_expenses")
         .select("*, trip:trips(trip_number)")
         .eq("company_id", ctx.effectiveCompanyId)
         .is("deleted_at", null);
+      if (from) expQuery = expQuery.gte("expense_date", from);
+      if (to) expQuery = expQuery.lte("expense_date", to);
+
+      const { data: expenses } = await expQuery;
       rows = (expenses ?? []).map((e) => ({
         "Date": formatDateIN(e.expense_date),
         "Trip": e.trip?.trip_number ?? "-",
@@ -70,11 +76,15 @@ export async function GET(
       break;
 
     case "financial":
-      const { data: fTrips } = await supabase
+      let finQuery = supabase
         .from("trips")
         .select("*, trip_expenses(amount)")
         .eq("company_id", ctx.effectiveCompanyId)
         .is("deleted_at", null);
+      if (from) finQuery = finQuery.gte("trip_date", from);
+      if (to) finQuery = finQuery.lte("trip_date", to);
+
+      const { data: fTrips } = await finQuery;
       rows = (fTrips ?? []).map((t) => {
         const income = t.freight_amount ?? t.bill_amount ?? 0;
         const totalExpenses = (t.trip_expenses ?? []).reduce((acc: number, e: any) => acc + Number(e.amount), 0);
@@ -90,11 +100,15 @@ export async function GET(
       break;
 
     case "settlement":
-      const { data: bills } = await supabase
+      let billQuery = supabase
         .from("bills")
         .select("*, customer:customers_parties(name), trip:trips(trip_number)")
         .eq("company_id", ctx.effectiveCompanyId)
         .is("deleted_at", null);
+      if (from) billQuery = billQuery.gte("bill_date", from);
+      if (to) billQuery = billQuery.lte("bill_date", to);
+
+      const { data: bills } = await billQuery;
       rows = (bills ?? []).map((b) => ({
         "Bill No": b.bill_no,
         "Customer": b.customer?.name ?? "-",
@@ -108,11 +122,15 @@ export async function GET(
 
     case "trips":
     default:
-      const { data: trips } = await supabase
+      let tripQuery = supabase
         .from("trips")
         .select("trip_number, status, trip_date, origin, destination, bill_amount, payment_status")
         .eq("company_id", ctx.effectiveCompanyId)
         .is("deleted_at", null);
+      if (from) tripQuery = tripQuery.gte("trip_date", from);
+      if (to) tripQuery = tripQuery.lte("trip_date", to);
+
+      const { data: trips } = await tripQuery;
       rows = (trips ?? []).map((t) => ({
         "Trip #": t.trip_number,
         "Status": t.status,
