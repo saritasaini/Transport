@@ -84,6 +84,8 @@ export async function upsertPayment(formData: FormData, id?: string) {
     (payload as any).created_by = ctx.userId;
   }
 
+  const supabase = await createClient();
+
   const { data: payment, error } = id
     ? await supabase
         .from("payments")
