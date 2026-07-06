@@ -18,6 +18,9 @@ import {
 import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
 import type { TripStatus } from "@/types/database";
 import { TripsFilters } from "@/components/trips/trips-filters";
+import { RowActions } from "@/components/shared/row-actions";
+import { deleteTrip } from "@/actions/trips";
+import { TripForm } from "@/components/trips/trip-form";
 
 export default async function TripsPage({
   searchParams,
@@ -27,6 +30,41 @@ export default async function TripsPage({
   const ctx = await getSessionContext();
   const params = await searchParams;
   const supabase = await createClient();
+  const companyId = ctx!.effectiveCompanyId!;
+
+  const [customers, vehicles, drivers, branches] = await Promise.all([
+    supabase
+      .from("customers_parties")
+      .select("id, name")
+      .eq("company_id", companyId)
+      .eq("type", "customer")
+      .is("deleted_at", null),
+    supabase
+      .from("vehicles")
+      .select("id, registration_number")
+      .eq("company_id", companyId)
+      .eq("current_status", "available")
+      .is("deleted_at", null),
+    supabase
+      .from("drivers")
+      .select("id, full_name")
+      .eq("company_id", companyId)
+      .eq("availability_status", "available")
+      .eq("is_active", true)
+      .is("deleted_at", null),
+    supabase.from("branches").select("id, name").eq("company_id", companyId),
+  ]);
+
+  const toOpt = (rows: any[]) =>
+    (rows ?? []).map((r) => ({
+      id: r.id,
+      label: r.name ?? r.full_name ?? r.registration_number ?? r.id,
+    }));
+
+  const customerOpts = toOpt(customers.data ?? []);
+  const vehicleOpts = toOpt(vehicles.data ?? []);
+  const driverOpts = toOpt(drivers.data ?? []);
+  const branchOpts = toOpt(branches.data ?? []);
 
   let query = supabase
     .from("trips")
@@ -81,6 +119,7 @@ export default async function TripsPage({
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Bill</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -105,6 +144,21 @@ export default async function TripsPage({
                     </TableCell>
                     <TableCell className="tabular-nums">
                       {formatCurrencyINR(t.bill_amount)}
+                    </TableCell>
+                    <TableCell>
+                      <RowActions 
+                        editModalTitle="Edit Trip"
+                        editContent={
+                          <TripForm 
+                            initialData={t}
+                            customers={customerOpts}
+                            vehicles={vehicleOpts}
+                            drivers={driverOpts}
+                            branches={branchOpts}
+                          />
+                        }
+                        onDelete={deleteTrip.bind(null, t.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

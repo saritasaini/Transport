@@ -17,19 +17,35 @@ import { Button } from "@/components/ui/button";
 import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { RowActions } from "@/components/shared/row-actions";
+import { deleteChallan } from "@/actions/finance";
+import { ChallanForm } from "@/components/challans/challan-form";
 
 export default async function ChallansPage() {
   const ctx = await getSessionContext();
   const supabase = await createClient();
   
-  // Create table if it doesn't exist for dev purposes gracefully
   const { data: challans, error } = await supabase
     .from("challans")
     .select("*, vehicle:vehicles(registration_number), driver:drivers(full_name)")
     .eq("company_id", ctx!.effectiveCompanyId!)
     .order("issue_date", { ascending: false });
 
+  const { data: vehicles } = await supabase
+    .from("vehicles")
+    .select("id, registration_number")
+    .eq("company_id", ctx!.effectiveCompanyId!)
+    .is("deleted_at", null);
+
+  const { data: drivers } = await supabase
+    .from("drivers")
+    .select("id, full_name")
+    .eq("company_id", ctx!.effectiveCompanyId!)
+    .is("deleted_at", null);
+
   const rows = challans ?? [];
+  const vehicleOptions = vehicles ?? [];
+  const driverOptions = drivers ?? [];
   const hasError = !!error;
 
   return (
@@ -38,12 +54,16 @@ export default async function ChallansPage() {
         title="Traffic Challans" 
         description="Track and manage vehicle traffic fines and deductions" 
         action={
-          <Link href="/dashboard/challans/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Challan
-            </Button>
-          </Link>
+          <RowActions 
+            editModalTitle="Add Traffic Challan"
+            editContent={<ChallanForm vehicles={vehicleOptions} drivers={driverOptions} />}
+            onDelete={undefined}
+            customTrigger={
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Add Challan
+              </Button>
+            }
+          />
         }
       />
       
@@ -72,6 +92,7 @@ export default async function ChallansPage() {
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Deduct</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -93,6 +114,13 @@ export default async function ChallansPage() {
                       </span>
                     </TableCell>
                     <TableCell>{c.deduct_from_driver ? "Yes" : "No"}</TableCell>
+                    <TableCell>
+                      <RowActions 
+                        editModalTitle="Edit Challan"
+                        editContent={<ChallanForm initialData={c} vehicles={vehicleOptions} drivers={driverOptions} />}
+                        onDelete={deleteChallan.bind(null, c.id)}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

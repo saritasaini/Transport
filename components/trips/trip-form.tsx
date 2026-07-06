@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tripSchema, type TripFormValues } from "@/lib/validations/trip";
-import { createTrip } from "@/actions/trips";
+import { createTrip, updateTrip } from "@/actions/trips";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,11 +25,17 @@ export function TripForm({
   vehicles,
   drivers,
   branches,
+  initialData,
+  onSuccess,
+  onCancel,
 }: {
   customers: Option[];
   vehicles: Option[];
   drivers: Option[];
   branches: Option[];
+  initialData?: Partial<TripFormValues> & { id?: string };
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const {
@@ -40,8 +46,17 @@ export function TripForm({
   } = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema),
     defaultValues: {
-      trip_date: new Date().toISOString().slice(0, 10),
-      bill_amount: 0,
+      customer_id: initialData?.customer_id || "",
+      vehicle_id: initialData?.vehicle_id || "",
+      driver_id: initialData?.driver_id || "",
+      branch_id: initialData?.branch_id || "",
+      origin: initialData?.origin || "",
+      destination: initialData?.destination || "",
+      start_location: initialData?.start_location || "",
+      fleet_origin: initialData?.fleet_origin || "",
+      trip_date: initialData?.trip_date ? new Date(initialData.trip_date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      bill_amount: initialData?.bill_amount || 0,
+      notes: initialData?.notes || "",
     },
   });
 
@@ -50,21 +65,29 @@ export function TripForm({
     Object.entries(values).forEach(([k, v]) => {
       if (v != null && v !== "") fd.append(k, String(v));
     });
-    const result = await createTrip(fd);
+    
+    const result = initialData?.id 
+      ? await updateTrip(initialData.id, fd)
+      : await createTrip(fd);
+      
     if (result?.error) {
       toast.error(typeof result.error === "string" ? result.error : "Validation error");
       return;
     }
-    toast.success("Trip created");
-    router.push(`/dashboard/trips`);
-    router.refresh();
+    toast.success(initialData?.id ? "Trip updated" : "Trip created");
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      router.push(`/dashboard/trips`);
+      router.refresh();
+    }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl space-y-4">
       <div>
         <Label>Customer *</Label>
-        <Select onValueChange={(v) => setValue("customer_id", v)}>
+        <Select defaultValue={initialData?.customer_id} onValueChange={(v) => setValue("customer_id", v)}>
           <SelectTrigger>
             <SelectValue placeholder="Select customer" />
           </SelectTrigger>
@@ -83,7 +106,7 @@ export function TripForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label>Vehicle (available)</Label>
-          <Select onValueChange={(v) => setValue("vehicle_id", v)}>
+          <Select defaultValue={initialData?.vehicle_id ?? undefined} onValueChange={(v) => setValue("vehicle_id", v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select free vehicle..." />
             </SelectTrigger>
@@ -98,7 +121,7 @@ export function TripForm({
         </div>
         <div>
           <Label>Driver (available)</Label>
-          <Select onValueChange={(v) => setValue("driver_id", v)}>
+          <Select defaultValue={initialData?.driver_id ?? undefined} onValueChange={(v) => setValue("driver_id", v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select free driver..." />
             </SelectTrigger>
@@ -114,7 +137,7 @@ export function TripForm({
       </div>
       <div>
         <Label>Branch</Label>
-        <Select onValueChange={(v) => setValue("branch_id", v)}>
+        <Select defaultValue={initialData?.branch_id ?? undefined} onValueChange={(v) => setValue("branch_id", v)}>
           <SelectTrigger>
             <SelectValue placeholder="Select branch" />
           </SelectTrigger>
@@ -161,9 +184,16 @@ export function TripForm({
         <Label>Notes</Label>
         <Textarea {...register("notes")} />
       </div>
-      <Button type="submit" disabled={isSubmitting}>
-        Create trip
-      </Button>
+      <div className="flex justify-end space-x-2">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+            Cancel
+          </Button>
+        )}
+        <Button type="submit" disabled={isSubmitting}>
+          {initialData?.id ? "Save Changes" : "Create trip"}
+        </Button>
+      </div>
     </form>
   );
 }

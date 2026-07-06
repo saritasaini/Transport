@@ -15,6 +15,11 @@ import {
 } from "@/components/ui/table";
 import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
 import { Receipt } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { RowActions } from "@/components/shared/row-actions";
+import { deleteExpense } from "@/actions/finance";
+import { ExpenseForm } from "@/components/expenses/expense-form";
 
 export default async function ExpensesPage() {
   const ctx = await getSessionContext();
@@ -27,11 +32,27 @@ export default async function ExpensesPage() {
     .order("expense_date", { ascending: false })
     .limit(100);
 
+  const { data: trips } = await supabase
+    .from("trips")
+    .select("id, trip_number")
+    .eq("company_id", ctx!.effectiveCompanyId!)
+    .is("deleted_at", null)
+    .order("trip_number", { ascending: false });
+
   const rows = expenses ?? [];
+  const tripList = trips ?? [];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Expenses" description="All trip-linked expenses" />
+      <PageHeader 
+        title="Expenses" 
+        description="All trip-linked expenses" 
+        action={
+          <Button asChild>
+            <Link href="/dashboard/expenses/new">Add Expense</Link>
+          </Button>
+        }
+      />
       <SectionPanel title="By category" contentClassName="p-0">
         <ExpenseChart expenses={rows} />
       </SectionPanel>
@@ -51,18 +72,26 @@ export default async function ExpensesPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Amount</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell>{e.trip?.trip_number}</TableCell>
-                    <TableCell>{e.category}</TableCell>
+                    <TableCell className="capitalize">{e.category.replace("_", " ")}</TableCell>
                     <TableCell className="tabular-nums">
                       {formatDateIN(e.expense_date)}
                     </TableCell>
                     <TableCell className="tabular-nums">
                       {formatCurrencyINR(e.amount)}
+                    </TableCell>
+                    <TableCell>
+                      <RowActions 
+                        editModalTitle="Edit Expense"
+                        editContent={<ExpenseForm initialData={e} trips={tripList} />}
+                        onDelete={deleteExpense.bind(null, e.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

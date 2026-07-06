@@ -16,6 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Building2 } from "lucide-react";
+import { RowActions } from "@/components/shared/row-actions";
+import { softDeleteParty } from "@/actions/masters";
+import { PartyForm } from "@/components/parties/party-form";
 
 export default async function PartiesPage() {
   const ctx = await getSessionContext();
@@ -54,6 +57,7 @@ export default async function PartiesPage() {
               <TableHead>Name</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -62,6 +66,13 @@ export default async function PartiesPage() {
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell>{p.contact_person ?? "—"}</TableCell>
                 <TableCell>{p.phone ?? "—"}</TableCell>
+                <TableCell>
+                  <RowActions 
+                    editModalTitle="Edit Party"
+                    editContent={<PartyForm initialData={p} />}
+                    onDelete={softDeleteParty.bind(null, p.id)}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

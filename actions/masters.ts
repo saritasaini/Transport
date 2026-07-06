@@ -93,3 +93,35 @@ export async function softDeleteDriver(id: string) {
   revalidatePath("/dashboard/drivers");
   return { success: true };
 }
+
+export async function softDeleteVehicle(id: string) {
+  const { ctx, companyId, supabase } = await requireTenant();
+  const { data } = await supabase.from("vehicles").select("*").eq("id", id).single();
+  if (!data) return { error: "Not found" };
+  await softDeleteRecord(supabase, {
+    companyId,
+    entityType: "vehicle",
+    entityId: id,
+    table: "vehicles",
+    data,
+    deletedBy: ctx.userId,
+  });
+  revalidatePath("/dashboard/vehicles");
+  return { success: true };
+}
+
+export async function softDeleteParty(id: string) {
+  const { ctx, companyId, supabase } = await requireTenant();
+  const { data } = await supabase.from("customers_parties").select("*").eq("id", id).single();
+  if (!data) return { error: "Not found" };
+  await softDeleteRecord(supabase, {
+    companyId,
+    entityType: "party",
+    entityId: id,
+    table: "customers_parties",
+    data,
+    deletedBy: ctx.userId,
+  });
+  revalidatePath("/dashboard/parties");
+  return { success: true };
+}

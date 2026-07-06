@@ -49,6 +49,43 @@ export async function createTrip(formData: FormData) {
   return { data };
 }
 
+export async function updateTrip(tripId: string, formData: FormData) {
+  let ctx;
+  let companyId: string;
+  try {
+    ({ ctx, companyId } = await requireTenant());
+  } catch {
+    return { error: "Unauthorized" };
+  }
+
+  const raw = Object.fromEntries(formData.entries());
+  const parsed = tripSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.flatten().fieldErrors };
+  }
+
+  const supabase = await createClient();
+  
+  // check if locked
+  const { data: trip } = await supabase.from("trips").select("is_locked").eq("id", tripId).single();
+  if (trip?.is_locked && !["transporter_admin", "super_admin"].includes(ctx.role)) {
+    return { error: "Trip is locked. Contact admin to modify." };
+  }
+
+  const { data, error } = await supabase
+    .from("trips")
+    .update({ ...parsed.data })
+    .eq("id", tripId)
+    .eq("company_id", companyId)
+    .select()
+    .single();
+
+  if (error) return { error: error.message };
+  revalidatePath(`/dashboard/trips/${tripId}`);
+  revalidatePath("/dashboard/trips");
+  return { data };
+}
+
 export async function updateTripStatus(tripId: string, formData: FormData) {
   let ctx;
   let companyId: string;

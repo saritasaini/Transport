@@ -35,9 +35,9 @@ export function Navbar({
   return (
     <header className="sticky top-0 z-10 flex h-[60px] shrink-0 items-center justify-between border-b border-border bg-white px-4">
       {/* Left Section: User Info */}
-      <div className="flex min-w-0 items-center gap-4 w-1/4">
+      <div className="flex flex-1 min-w-0 items-center gap-2 sm:gap-4">
         {menuTrigger}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-hidden">
           <p className="truncate text-sm font-semibold text-slate-900">
             {ctx.profile.full_name}
           </p>
@@ -67,10 +67,10 @@ export function Navbar({
       </div>
 
       {/* Right Section: Actions */}
-      <div className="flex items-center gap-4 w-1/4 justify-end">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-4 justify-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon" className="h-9 w-9 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
+            <Button size="icon" className="h-9 w-9 shrink-0 rounded-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
               <Plus className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -101,7 +101,7 @@ export function Navbar({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 text-slate-600 hover:bg-slate-100" asChild>
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 shrink-0 text-slate-600 hover:bg-slate-100" asChild>
           <Link href="/dashboard/notifications" aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}>
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
@@ -111,7 +111,7 @@ export function Navbar({
             )}
           </Link>
         </Button>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 text-slate-600 hover:bg-slate-100" asChild>
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 shrink-0 text-slate-600 hover:bg-slate-100" asChild>
           <Link href="/dashboard/messages" aria-label="Messages">
             <MessageSquareText className="h-5 w-5" />
             {unreadMessageCount > 0 && (
@@ -121,17 +121,17 @@ export function Navbar({
             )}
           </Link>
         </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-600 hover:bg-slate-100" asChild>
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-slate-600 hover:bg-slate-100" asChild>
           <Link href="/dashboard/settings/branches" aria-label="Settings">
             <Settings className="h-5 w-5" />
           </Link>
         </Button>
         
-        <form action={signOut} className="ml-2 flex items-center gap-1 cursor-pointer">
+        <form action={signOut} className="ml-1 sm:ml-2 flex items-center gap-1 cursor-pointer shrink-0">
           <button type="submit" className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600 hover:bg-blue-200" aria-label="Sign out">
             {getInitials(ctx.profile.full_name)}
           </button>
-          <ChevronDown className="h-4 w-4 text-slate-500" />
+          <ChevronDown className="hidden sm:block h-4 w-4 text-slate-500" />
         </form>
       </div>
     </header>

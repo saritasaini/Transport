@@ -16,6 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateIN } from "@/lib/utils/format";
+import { RowActions } from "@/components/shared/row-actions";
+import { softDeleteVehicle } from "@/actions/masters";
+import { VehicleForm } from "@/components/vehicles/vehicle-form";
 
 export default async function VehiclesPage() {
   const ctx = await getSessionContext();
@@ -57,6 +60,7 @@ export default async function VehiclesPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Insurance</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -76,6 +80,13 @@ export default async function VehiclesPage() {
                     </TableCell>
                     <TableCell className="tabular-nums">
                       {formatDateIN(v.insurance_expiry)}
+                    </TableCell>
+                    <TableCell>
+                      <RowActions 
+                        editModalTitle="Edit Vehicle"
+                        editContent={<VehicleForm initialData={v} />}
+                        onDelete={softDeleteVehicle.bind(null, v.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

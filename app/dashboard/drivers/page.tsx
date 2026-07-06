@@ -16,6 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateIN, daysUntil, expiryBadgeVariant } from "@/lib/utils/format";
+import { RowActions } from "@/components/shared/row-actions";
+import { softDeleteDriver } from "@/actions/masters";
+import { DriverForm } from "@/components/drivers/driver-form";
 import { cn } from "@/lib/utils";
 
 export default async function DriversPage() {
@@ -58,6 +61,7 @@ export default async function DriversPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>DL expiry</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -89,6 +93,13 @@ export default async function DriversPage() {
                           {formatDateIN(d.license_expiry_date)}
                           {days !== null && days <= 30 && ` (${days}d)`}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <RowActions 
+                          editModalTitle="Edit Driver"
+                          editContent={<DriverForm initialData={d} />}
+                          onDelete={softDeleteDriver.bind(null, d.id)}
+                        />
                       </TableCell>
                     </TableRow>
                   );

@@ -56,7 +56,21 @@ export const paymentSchema = z.object({
   trip_id: z.string().uuid(),
   customer_id: z.string().uuid(),
   amount: z.coerce.number().positive(),
-  payment_mode: z.enum(["cash", "bank_transfer", "cheque"]),
+  tds_deducted: z.coerce.number().min(0).optional().nullable(),
+  net_received: z.coerce.number().min(0).optional().nullable(),
+  payment_mode: z.enum(["cash", "bank_transfer", "cheque", "upi", "neft", "rtgs"]),
   payment_date: z.string().min(1),
   reference_note: z.string().optional().nullable(),
+});
+
+export const challanSchema = z.object({
+  vehicle_id: z.string().uuid(),
+  driver_id: z.string().uuid().optional().nullable(),
+  trip_id: z.string().uuid().optional().nullable(),
+  challan_no: z.string().min(1, "Challan number is required"),
+  amount: z.coerce.number().min(0),
+  issue_date: z.string().min(1),
+  status: z.enum(["pending", "paid", "contested"]),
+  deduct_from_driver: z.boolean().default(false),
+  notes: z.string().optional().nullable(),
 });
