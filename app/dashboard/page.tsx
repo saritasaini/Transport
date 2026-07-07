@@ -174,6 +174,7 @@ export default async function DashboardPage() {
     { data: expenses },
     { data: payments },
     { data: expiringVehicles },
+    { data: unpaidTrips },
   ] = await Promise.all([
     supabase
       .from("trips")
@@ -229,18 +230,18 @@ export default async function DashboardPage() {
       .from("vehicles")
       .select("registration_number, insurance_expiry, fitness_expiry, permit_expiry")
       .eq("company_id", companyId)
+      .eq("company_id", companyId)
+      .is("deleted_at", null),
+    supabase
+      .from("trips")
+      .select("bill_amount")
+      .eq("company_id", companyId)
+      .in("payment_status", ["unpaid", "partially_paid"])
       .is("deleted_at", null),
   ]);
 
   const monthlyExpenses = expenses?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
   const monthlyIncome = payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
-
-  const { data: unpaidTrips } = await supabase
-    .from("trips")
-    .select("bill_amount")
-    .eq("company_id", companyId)
-    .in("payment_status", ["unpaid", "partially_paid"])
-    .is("deleted_at", null);
 
   const outstanding =
     unpaidTrips?.reduce((s, t) => s + Number(t.bill_amount), 0) ?? 0;

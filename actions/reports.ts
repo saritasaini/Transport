@@ -19,12 +19,8 @@ export async function getDashboardMetrics(from?: string, to?: string) {
       .select("id, trip_number, trip_date, status, payment_status, bill_amount, freight_amount")
       .eq("company_id", companyId)
       .is("deleted_at", null);
-      
     if (from) tripsQuery = tripsQuery.gte("trip_date", from);
     if (to) tripsQuery = tripsQuery.lte("trip_date", to);
-
-    const { data: trips, error: tripsError } = await tripsQuery;
-    if (tripsError) throw new Error(tripsError.message);
 
     // 2. Fetch Expenses
     let expensesQuery = supabase
@@ -36,16 +32,25 @@ export async function getDashboardMetrics(from?: string, to?: string) {
     if (from) expensesQuery = expensesQuery.gte("expense_date", from);
     if (to) expensesQuery = expensesQuery.lte("expense_date", to);
 
-    const { data: expenses, error: expensesError } = await expensesQuery;
-    if (expensesError) throw new Error(expensesError.message);
-
-    // 3. Fetch Vehicles (Active)
-    const { data: vehicles } = await supabase
+    let vehiclesQuery = supabase
       .from("vehicles")
       .select("id")
       .eq("company_id", companyId)
       .eq("current_status", "active")
       .is("deleted_at", null);
+
+    const [
+      { data: trips, error: tripsError },
+      { data: expenses, error: expensesError },
+      { data: vehicles }
+    ] = await Promise.all([
+      tripsQuery,
+      expensesQuery,
+      vehiclesQuery
+    ]);
+
+    if (tripsError) throw new Error(tripsError.message);
+    if (expensesError) throw new Error(expensesError.message);
 
     // Processing KPIs
     const totalTrips = trips?.length || 0;
@@ -88,16 +93,27 @@ export async function getDashboardMetrics(from?: string, to?: string) {
     });
 
     let totalExpenses = 0;
+    let fuel = 0;
+    let driverPay = 0;
+    let maintenance = 0;
+    let tollMisc = 0;
+
     expenses?.forEach((e) => {
       const amount = Number(e.amount || 0);
       totalExpenses += amount;
       
+      if (e.category === "fuel") fuel += amount;
+      else if (e.category === "driver_allowance" || e.category === "food") driverPay += amount;
+      else if (e.category === "maintenance") maintenance += amount;
+      else tollMisc += amount;
+
       const d = e.expense_date.split('T')[0];
       if (!dailyDataMap[d]) dailyDataMap[d] = { date: d, revenue: 0, expense: 0 };
       dailyDataMap[d].expense += amount;
     });
 
     const netProfit = totalRevenue - totalExpenses;
+    const margin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
     // Convert daily data map to sorted array
     const chartData = Object.values(dailyDataMap).sort((a, b) => a.date.localeCompare(b.date));
@@ -120,11 +136,18 @@ export async function getDashboardMetrics(from?: string, to?: string) {
     return {
       success: true,
       kpis: {
+        totalTrips,
+        activeVehicles,
         totalRevenue,
         totalExpenses,
         netProfit,
-        totalTrips,
-        activeVehicles
+        margin,
+        expenseBreakdown: {
+          fuel,
+          driverPay,
+          maintenance,
+          tollMisc,
+        }
       },
       chartData,
       tripStatusData,

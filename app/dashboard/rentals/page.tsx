@@ -14,7 +14,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { RowActions } from "@/components/shared/row-actions";
+import { softDeleteRental } from "@/actions/rentals";
+import { RentalForm } from "@/components/rentals/rental-form";
 
 type RentalRow = {
   id: string;
@@ -26,7 +31,7 @@ type RentalRow = {
   total_amount: number;
 };
 
-function RentalTable({ rows }: { rows: RentalRow[] }) {
+function RentalTable({ rows, parties }: { rows: RentalRow[], parties: any[] }) {
   if (!rows.length) {
     return (
       <EmptyState
@@ -46,6 +51,7 @@ function RentalTable({ rows }: { rows: RentalRow[] }) {
             <TableHead>Vehicle</TableHead>
             <TableHead>Period</TableHead>
             <TableHead>Amount</TableHead>
+            <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -58,6 +64,13 @@ function RentalTable({ rows }: { rows: RentalRow[] }) {
               </TableCell>
               <TableCell className="tabular-nums">
                 {formatCurrencyINR(r.total_amount)}
+              </TableCell>
+              <TableCell>
+                <RowActions
+                  editModalTitle="Edit Rental"
+                  editContent={<RentalForm parties={parties} initialData={r} />}
+                  onDelete={softDeleteRental.bind(null, r.id)}
+                />
               </TableCell>
             </TableRow>
           ))}
@@ -79,11 +92,26 @@ export default async function RentalsPage() {
   const rentIn = (data?.filter((r) => r.type === "rent_in") ?? []) as RentalRow[];
   const rentOut = (data?.filter((r) => r.type === "rent_out") ?? []) as RentalRow[];
 
+  const { data: partiesData } = await supabase
+    .from("customers_parties")
+    .select("id, name, type")
+    .eq("company_id", ctx!.effectiveCompanyId!)
+    .is("deleted_at", null)
+    .order("name");
+
   return (
     <div>
       <PageHeader
         title="Rent In / Rent Out"
         description="Track third-party vehicle rentals"
+        action={
+          <Button asChild>
+            <Link href="/dashboard/rentals/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Rental
+            </Link>
+          </Button>
+        }
       />
       <SectionPanel title="Rental agreements" contentClassName="p-4 pt-0">
         <Tabs defaultValue="rent_in">
@@ -92,10 +120,10 @@ export default async function RentalsPage() {
             <TabsTrigger value="rent_out">Rent Out</TabsTrigger>
           </TabsList>
           <TabsContent value="rent_in">
-            <RentalTable rows={rentIn} />
+            <RentalTable rows={rentIn} parties={partiesData || []} />
           </TabsContent>
           <TabsContent value="rent_out">
-            <RentalTable rows={rentOut} />
+            <RentalTable rows={rentOut} parties={partiesData || []} />
           </TabsContent>
         </Tabs>
       </SectionPanel>

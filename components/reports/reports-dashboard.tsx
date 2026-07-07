@@ -21,8 +21,9 @@ import {
   Legend
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Fuel, User, Wrench, Package } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const REPORTS = [
   { id: "driver", title: "Driver Report", href: "/api/export/driver?format=xlsx" },
@@ -92,39 +93,101 @@ export function ReportsDashboard() {
         <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
       ) : data ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyINR(data.kpis.totalRevenue)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyINR(data.kpis.totalExpenses)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrencyINR(data.kpis.netProfit)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Trips</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.kpis.totalTrips}</div>
-              </CardContent>
-            </Card>
+          <div className="mb-2 mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+            AGGREGATE FINANCIAL DEEP DIVE — {data.kpis.totalTrips} Trips
+          </div>
+          <div className="grid gap-6 lg:grid-cols-4 mb-6">
+            <SectionPanel className="lg:col-span-2 bg-white border border-slate-200 shadow-sm" contentClassName="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <span className="text-red-600 font-bold">↓</span>
+                <h3 className="font-semibold text-slate-900 text-lg">Cost breakdown</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <div className="flex items-center gap-3 text-slate-700">
+                    <div className="bg-red-50 p-2 rounded-md"><Fuel className="w-4 h-4 text-red-500" /></div>
+                    <span className="font-medium">Fuel</span>
+                  </div>
+                  <span className="font-semibold text-red-700">{formatCurrencyINR(data.kpis.expenseBreakdown.fuel)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <div className="flex items-center gap-3 text-slate-700">
+                    <div className="bg-indigo-50 p-2 rounded-md"><User className="w-4 h-4 text-indigo-500" /></div>
+                    <span className="font-medium">Driver pay</span>
+                  </div>
+                  <span className="font-semibold text-red-700">{formatCurrencyINR(data.kpis.expenseBreakdown.driverPay)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <div className="flex items-center gap-3 text-slate-700">
+                    <div className="bg-emerald-50 p-2 rounded-md"><span className="w-4 h-4 text-emerald-600 font-bold leading-none block text-center">T</span></div>
+                    <span className="font-medium">Toll charges</span>
+                  </div>
+                  <span className="font-semibold text-red-700">{formatCurrencyINR(data.kpis.expenseBreakdown.tollMisc)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <div className="flex items-center gap-3 text-slate-700">
+                    <div className="bg-purple-50 p-2 rounded-md"><Wrench className="w-4 h-4 text-purple-500" /></div>
+                    <span className="font-medium">Vehicle maintenance</span>
+                  </div>
+                  <span className="font-semibold text-red-700">{formatCurrencyINR(data.kpis.expenseBreakdown.maintenance)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center py-3">
+                  <span className="font-bold text-slate-900">Total cost</span>
+                  <span className="font-bold text-red-700">{formatCurrencyINR(data.kpis.totalExpenses)}</span>
+                </div>
+              </div>
+            </SectionPanel>
+
+            <SectionPanel className="lg:col-span-2 bg-white border border-slate-200 shadow-sm" contentClassName="p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-6">
+                  <span className="text-emerald-600 font-bold">↑</span>
+                  <h3 className="font-semibold text-slate-900 text-lg">Revenue & margin</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium">Total Freight charged</span>
+                    <span className="font-medium text-emerald-700">{formatCurrencyINR(data.kpis.totalRevenue)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium">Total cost</span>
+                    <span className="font-medium text-red-700">{formatCurrencyINR(data.kpis.totalExpenses)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium">Net profit</span>
+                    <span className="font-medium text-emerald-700">{formatCurrencyINR(data.kpis.netProfit)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                    <span className="text-slate-600 font-medium">Margin</span>
+                    <span className="font-medium text-emerald-700">{data.kpis.margin.toFixed(0)}%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-6 mt-4 border-t border-slate-100">
+                <span className="font-bold text-slate-900">Overall P&L result</span>
+                <div className="flex items-center gap-3">
+                  <span className={cn("font-medium", data.kpis.netProfit < 0 ? "text-red-600" : "text-emerald-600")}>
+                    {data.kpis.netProfit < 0 ? "Loss" : "Profitable"}
+                  </span>
+                  <span className={cn(
+                    "px-2 py-1 rounded-full text-xs font-bold",
+                    data.kpis.netProfit < 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
+                  )}>
+                    {data.kpis.netProfit < 0 ? "" : "+"}{data.kpis.margin.toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+            </SectionPanel>
           </div>
 
           {/* Charts Section */}

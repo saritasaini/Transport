@@ -6,8 +6,10 @@ import { PartyForm } from "@/components/parties/party-form";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function NewPartyPage() {
+  const router = useRouter();
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <PageHeader 
@@ -23,7 +25,7 @@ export default function NewPartyPage() {
         }
       />
       <SectionPanel title="Party details">
-        <PartyForm />
+        <PartyForm onCancel={() => router.back()} />
       </SectionPanel>
     </div>
   );

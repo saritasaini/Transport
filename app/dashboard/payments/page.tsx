@@ -12,38 +12,79 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrencyINR, formatDateIN } from "@/lib/utils/format";
+import { formatCurrencyINR } from "@/lib/utils/format";
 import Link from "next/link";
-import { CreditCard, History, HandCoins } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RowActions } from "@/components/shared/row-actions";
-import { deletePayment } from "@/actions/finance";
-import { PaymentForm } from "@/components/payments/payment-form";
+import { CreditCard, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { RowActions } from "@/components/shared/row-actions";
+import { PaymentForm } from "@/components/payments/payment-form";
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const ctx = await getSessionContext();
   const supabase = await createClient();
+  const params = await searchParams;
   
+  // Currently we use trip_date + 30 days as a simple overdue check if due_date isn't available
   const { data: trips } = await supabase
     .from("trips")
-    .select("*, customer:customers_parties(name)")
+    .select("*, customer:customers_parties(name), payments(amount)")
     .eq("company_id", ctx!.effectiveCompanyId!)
     .is("deleted_at", null)
     .neq("status", "cancelled")
-    .order("trip_date", { ascending: false })
-    .limit(100);
-
-  const { data: payments } = await supabase
-    .from("payments")
-    .select("*, trip:trips(trip_number), customer:customers_parties(name)")
-    .eq("company_id", ctx!.effectiveCompanyId!)
-    .is("deleted_at", null)
-    .order("payment_date", { ascending: false })
-    .limit(100);
+    .order("trip_date", { ascending: false });
 
   const tripRows = trips ?? [];
-  const paymentRows = payments ?? [];
+
+  let totalBilled = 0;
+  let totalCollected = 0;
+  let totalOverdue = 0;
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const processedTrips = tripRows.map(t => {
+    const billAmt = Number(t.bill_amount ?? t.freight_amount ?? 0);
+    const payments = t.payments as { amount: number }[];
+    const collectedAmt = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+    const balanceDue = billAmt - collectedAmt;
+    
+    let status = "unpaid";
+    if (balanceDue <= 0 && billAmt > 0) status = "paid";
+    else if (collectedAmt > 0 && balanceDue > 0) status = "partial";
+
+    totalBilled += billAmt;
+    totalCollected += collectedAmt;
+
+    const tripDate = new Date(t.trip_date);
+    if (status !== "paid" && tripDate < thirtyDaysAgo) {
+      totalOverdue += balanceDue;
+    }
+
+    return {
+      ...t,
+      billAmt,
+      collectedAmt,
+      balanceDue,
+      derivedStatus: status,
+    };
+  });
+
+  const totalOutstanding = totalBilled - totalCollected;
+
+  const filterTab = params.tab || "all";
+  const viewMode = params.view || "trip";
+
+  const filteredTrips = processedTrips.filter(t => {
+    if (filterTab === "unpaid") return t.derivedStatus === "unpaid";
+    if (filterTab === "partial") return t.derivedStatus === "partial";
+    if (filterTab === "paid") return t.derivedStatus === "paid";
+    return true; // all
+  });
 
   const tripOptions = tripRows.map(t => ({
     id: t.id,
@@ -54,152 +95,139 @@ export default async function PaymentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Payments & Bill Settlement"
-        description="Track bill amounts, outstanding balances, and payment history"
+        title="Payments & bill settlement"
+        description="Track bill amounts, collections and outstanding per trip"
       />
       
-      <Tabs defaultValue="outstanding" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="outstanding" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Outstanding Bills
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            Payment History
-          </TabsTrigger>
-        </TabsList>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+          <p className="text-sm text-slate-500 font-medium mb-1">Total billed</p>
+          <p className="text-3xl font-bold text-slate-900">{formatCurrencyINR(totalBilled)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+          <p className="text-sm text-slate-500 font-medium mb-1">Collected</p>
+          <p className="text-3xl font-bold text-emerald-600">{formatCurrencyINR(totalCollected)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+          <p className="text-sm text-slate-500 font-medium mb-1">Outstanding</p>
+          <p className="text-3xl font-bold text-red-600">{formatCurrencyINR(totalOutstanding)}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+          <p className="text-sm text-slate-500 font-medium mb-1">Overdue (&gt;30 days)</p>
+          <p className="text-3xl font-bold text-amber-600">{formatCurrencyINR(totalOverdue)}</p>
+        </div>
+      </div>
 
-        <TabsContent value="outstanding" className="space-y-4">
-          {!tripRows.length ? (
-            <EmptyState
-              icon={CreditCard}
-              title="No pending bills"
-              description="Trips with bill amounts will appear here for settlement tracking."
-            />
-          ) : (
-            <SectionPanel title="Trip Bills" contentClassName="p-0">
-              <DataTableShell>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Trip</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Bill</TableHead>
-                      <TableHead>Payment status</TableHead>
-                      <TableHead className="w-[150px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tripRows.map((t) => (
-                      <TableRow key={t.id}>
-                        <TableCell>
-                          <Link
-                            href={`/dashboard/trips/${t.id}`}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {t.trip_number}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{t.customer?.name}</TableCell>
-                        <TableCell className="tabular-nums font-medium">
-                          {formatCurrencyINR(t.bill_amount)}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
-                            t.payment_status === 'paid' ? "bg-green-50 text-green-700 ring-green-600/20" :
-                            t.payment_status === 'partially_paid' ? "bg-blue-50 text-blue-700 ring-blue-600/20" :
-                            "bg-yellow-50 text-yellow-800 ring-yellow-600/20"
-                          }`}>
-                            {t.payment_status.replace("_", " ").toUpperCase()}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {t.payment_status !== 'paid' && (
-                            <RowActions 
-                              editModalTitle="Record Payment"
-                              editContent={<PaymentForm initialData={{ trip_id: t.id }} trips={tripOptions} />}
-                              onDelete={undefined}
-                              customTrigger={
-                                <Button variant="outline" size="sm" className="h-8">
-                                  <HandCoins className="w-4 h-4 mr-2" /> Pay
-                                </Button>
-                              }
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </DataTableShell>
-            </SectionPanel>
-          )}
-        </TabsContent>
-
-        <TabsContent value="history" className="space-y-4">
-          <div className="flex justify-end mb-4">
-            <RowActions 
+      <SectionPanel title="Outstanding and settled bills" contentClassName="p-0">
+        <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+           <div className="flex items-center gap-2">
+             <Button variant={filterTab === "all" ? "default" : "outline"} size="sm" asChild>
+                <Link href={`?tab=all&view=${viewMode}`}>All</Link>
+             </Button>
+             <Button variant={filterTab === "unpaid" ? "default" : "outline"} size="sm" asChild>
+                <Link href={`?tab=unpaid&view=${viewMode}`}>Unpaid</Link>
+             </Button>
+             <Button variant={filterTab === "partial" ? "default" : "outline"} size="sm" asChild>
+                <Link href={`?tab=partial&view=${viewMode}`}>Partial</Link>
+             </Button>
+             <Button variant={filterTab === "paid" ? "default" : "outline"} size="sm" asChild>
+                <Link href={`?tab=paid&view=${viewMode}`}>Paid</Link>
+             </Button>
+           </div>
+           
+           <RowActions 
               editModalTitle="Record Payment"
               editContent={<PaymentForm trips={tripOptions} />}
               onDelete={undefined}
               customTrigger={
-                <Button>
-                  <HandCoins className="w-4 h-4 mr-2" /> Record Payment
+                <Button size="sm">
+                  + Record payment
                 </Button>
               }
             />
+        </div>
+
+        <div className="p-4 border-b border-slate-200 flex items-center gap-2">
+          <Button variant={viewMode === "trip" ? "secondary" : "ghost"} size="sm" asChild>
+            <Link href={`?tab=${filterTab}&view=trip`}>By trip</Link>
+          </Button>
+          <Button variant={viewMode === "customer" ? "secondary" : "ghost"} size="sm" asChild>
+            <Link href={`?tab=${filterTab}&view=customer`}>By customer</Link>
+          </Button>
+        </div>
+
+        {!filteredTrips.length ? (
+          <EmptyState
+            icon={CreditCard}
+            title="No records found"
+            description="No trips match the selected filters."
+          />
+        ) : viewMode === "trip" ? (
+          <DataTableShell>
+            <Table>
+              <TableHeader>
+                <TableRow className="text-xs uppercase text-slate-500 tracking-wider bg-slate-50/50">
+                  <TableHead className="py-3">Trip</TableHead>
+                  <TableHead className="py-3">Customer</TableHead>
+                  <TableHead className="py-3">Route</TableHead>
+                  <TableHead className="py-3 text-right">Bill Amount</TableHead>
+                  <TableHead className="py-3 text-right">Collected</TableHead>
+                  <TableHead className="py-3 text-right">Balance Due</TableHead>
+                  <TableHead className="py-3 w-[100px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTrips.map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="py-3">
+                      <Link
+                        href={`/dashboard/trips/${t.id}`}
+                        className="font-medium text-brand-600 hover:underline block"
+                      >
+                        {t.trip_number}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="py-3 font-medium text-slate-900">{t.customer?.name ?? "N/A"}</TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1 text-sm text-slate-600 whitespace-nowrap">
+                         {t.origin} <ArrowRight className="h-3 w-3 text-slate-400" /> {t.destination}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-right font-medium text-slate-900">
+                      {formatCurrencyINR(t.billAmt)}
+                    </TableCell>
+                    <TableCell className="py-3 text-right text-emerald-600 font-medium">
+                      {t.collectedAmt > 0 ? formatCurrencyINR(t.collectedAmt) : "₹0"}
+                    </TableCell>
+                    <TableCell className={cn("py-3 text-right font-medium", t.balanceDue > 0 ? "text-red-600" : "text-slate-500")}>
+                      {formatCurrencyINR(t.balanceDue)}
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      {t.balanceDue > 0 && (
+                        <RowActions 
+                          editModalTitle={`Record Payment for ${t.trip_number}`}
+                          editContent={<PaymentForm initialData={{ trip_id: t.id }} trips={tripOptions} />}
+                          onDelete={undefined}
+                          customTrigger={
+                            <Button variant="outline" size="sm" className="h-8">
+                              Collect
+                            </Button>
+                          }
+                        />
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </DataTableShell>
+        ) : (
+          <div className="p-8 text-center text-slate-500">
+            Customer-wise grouped view will be implemented soon.
           </div>
-          {!paymentRows.length ? (
-            <EmptyState
-              icon={History}
-              title="No payment history"
-              description="Payments made will appear here."
-            />
-          ) : (
-            <SectionPanel title="Payment Records" contentClassName="p-0">
-              <DataTableShell>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Trip</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Mode</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paymentRows.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell>{formatDateIN(p.payment_date)}</TableCell>
-                        <TableCell>
-                          <Link href={`/dashboard/trips/${p.trip_id}`} className="font-medium text-primary hover:underline">
-                            {p.trip?.trip_number}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{p.customer?.name}</TableCell>
-                        <TableCell className="capitalize">{p.payment_mode.replace("_", " ")}</TableCell>
-                        <TableCell className="tabular-nums font-semibold text-green-600">
-                          {formatCurrencyINR(p.amount)}
-                        </TableCell>
-                        <TableCell>
-                          <RowActions 
-                            editModalTitle="Edit Payment"
-                            editContent={<PaymentForm initialData={p} trips={tripOptions} />}
-                            onDelete={deletePayment.bind(null, p.id)}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </DataTableShell>
-            </SectionPanel>
-          )}
-        </TabsContent>
-      </Tabs>
+        )}
+      </SectionPanel>
     </div>
   );
 }

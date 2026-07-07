@@ -53,6 +53,7 @@ export type AppModule =
   | "branches"
   | "users"
   | "tally"
+  | "job_sheet"
   | "recovery";
 
 export interface Company {

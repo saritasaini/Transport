@@ -21,7 +21,7 @@ import {
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, Fuel, User, Route as RouteIcon, Wrench, Package } from "lucide-react";
 
 export default async function TripDetailPage({
   params,
@@ -63,6 +63,24 @@ export default async function TripDetailPage({
 
   const expenseRows = expenses ?? [];
   const paymentRows = payments ?? [];
+
+  let fuel = 0, driverPay = 0, toll = 0, maintenance = 0, misc = 0;
+  expenseRows.forEach(e => {
+    const amt = Number(e.amount);
+    if (e.category === 'fuel') fuel += amt;
+    else if (e.category === 'driver_allowance' || e.category === 'food') driverPay += amt;
+    else if (e.category === 'toll') toll += amt;
+    else if (e.category === 'maintenance') maintenance += amt;
+    else misc += amt;
+  });
+  
+  const totalCost = fuel + driverPay + toll + maintenance + misc;
+  const revenue = Number(trip.freight_amount ?? trip.bill_amount ?? 0);
+  const netProfit = revenue - totalCost;
+  const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+  const distance = Number(trip.distance_covered ?? 0);
+  const costPerKm = distance > 0 ? (totalCost / distance) : 0;
+  const isLoss = netProfit < 0;
 
   return (
     <div className="space-y-6">
@@ -160,33 +178,122 @@ export default async function TripDetailPage({
         </SectionPanel>
       </div>
       <div className="grid gap-6 lg:grid-cols-4 mb-6">
-        <SectionPanel title="Financial P&L" className="lg:col-span-1 bg-slate-50 border-blue-100">
-          <div className="flex flex-col gap-4">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Income (Freight)</div>
-              <div className="text-lg font-bold text-slate-900">{formatCurrencyINR(trip.freight_amount ?? trip.bill_amount)}</div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Total Expenses</div>
-              <div className="text-lg font-bold text-red-600">
-                - {formatCurrencyINR(expenseRows.reduce((acc, e) => acc + Number(e.amount), 0))}
+        <div className="lg:col-span-4 mb-2 mt-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+          SINGLE JOB DEEP DIVE — {trip.trip_number}
+        </div>
+        <SectionPanel className="lg:col-span-2 bg-white border border-slate-200 shadow-sm" contentClassName="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-red-600 font-bold">↓</span>
+            <h3 className="font-semibold text-slate-900 text-lg">Cost breakdown</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex items-center gap-3 text-slate-700">
+                <div className="bg-red-50 p-2 rounded-md"><Fuel className="w-4 h-4 text-red-500" /></div>
+                <span className="font-medium">Fuel</span>
               </div>
+              <span className="font-semibold text-red-700">{formatCurrencyINR(fuel)}</span>
             </div>
-            <div className="pt-3 border-t border-slate-200">
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-1">Net Profit</div>
-              <div className={cn(
-                "text-2xl font-black",
-                (trip.freight_amount ?? trip.bill_amount) - expenseRows.reduce((acc, e) => acc + Number(e.amount), 0) >= 0 
-                  ? "text-green-600" 
-                  : "text-red-600"
-              )}>
-                {formatCurrencyINR((trip.freight_amount ?? trip.bill_amount) - expenseRows.reduce((acc, e) => acc + Number(e.amount), 0))}
+            
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex items-center gap-3 text-slate-700">
+                <div className="bg-indigo-50 p-2 rounded-md"><User className="w-4 h-4 text-indigo-500" /></div>
+                <span className="font-medium">Driver pay</span>
+              </div>
+              <span className="font-semibold text-red-700">{formatCurrencyINR(driverPay)}</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex items-center gap-3 text-slate-700">
+                <div className="bg-amber-50 p-2 rounded-md"><RouteIcon className="w-4 h-4 text-amber-500" /></div>
+                <span className="font-medium">Toll charges</span>
+              </div>
+              <span className="font-semibold text-red-700">{formatCurrencyINR(toll)}</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex items-center gap-3 text-slate-700">
+                <div className="bg-purple-50 p-2 rounded-md"><Wrench className="w-4 h-4 text-purple-500" /></div>
+                <span className="font-medium">Vehicle maintenance</span>
+              </div>
+              <span className="font-semibold text-red-700">{formatCurrencyINR(maintenance)}</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex items-center gap-3 text-slate-700">
+                <div className="bg-emerald-50 p-2 rounded-md"><Package className="w-4 h-4 text-emerald-500" /></div>
+                <span className="font-medium">Loading / misc</span>
+              </div>
+              <span className="font-semibold text-red-700">{formatCurrencyINR(misc)}</span>
+            </div>
+            
+            <div className="flex justify-between items-center pt-4">
+              <span className="font-bold text-slate-900">Total cost</span>
+              <span className="font-bold text-red-700 text-lg">{formatCurrencyINR(totalCost)}</span>
+            </div>
+          </div>
+        </SectionPanel>
+
+        <SectionPanel className="lg:col-span-2 bg-white border border-slate-200 shadow-sm" contentClassName="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-emerald-600 font-bold">↑</span>
+            <h3 className="font-semibold text-slate-900 text-lg">Revenue & margin</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+              <span className="text-slate-600 font-medium">Freight charged</span>
+              <span className="font-semibold text-emerald-700">{formatCurrencyINR(revenue)}</span>
+            </div>
+
+            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+              <span className="text-slate-600 font-medium">Total cost</span>
+              <span className="font-semibold text-red-700">{formatCurrencyINR(totalCost)}</span>
+            </div>
+
+            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+              <span className="text-slate-600 font-medium">Net profit</span>
+              <span className={cn("font-semibold", isLoss ? "text-red-700" : "text-emerald-700")}>
+                {formatCurrencyINR(netProfit)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+              <span className="text-slate-600 font-medium">Margin</span>
+              <span className={cn("font-semibold", isLoss ? "text-red-700" : "text-emerald-700")}>
+                {margin.toFixed(1)}%
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+              <span className="text-slate-600 font-medium">Fuel efficiency</span>
+              <span className="font-medium text-slate-900">N/A km/L</span>
+            </div>
+
+            <div className="flex justify-between items-center py-3 border-b border-slate-100">
+              <span className="text-slate-600 font-medium">Cost per km</span>
+              <span className="font-medium text-slate-900">₹{costPerKm.toFixed(1)}</span>
+            </div>
+
+            <div className="flex justify-between items-center pt-4">
+              <span className="font-bold text-slate-900">P&L result</span>
+              <div className="flex items-center gap-3">
+                <span className={cn("font-medium", isLoss ? "text-red-600" : "text-emerald-600")}>
+                  {isLoss ? "Loss" : "Profitable"}
+                </span>
+                <span className={cn(
+                  "px-2 py-1 rounded-full text-xs font-bold",
+                  isLoss ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
+                )}>
+                  {isLoss ? "" : "+"}{margin.toFixed(0)}%
+                </span>
               </div>
             </div>
           </div>
         </SectionPanel>
         
-        <SectionPanel title="Status timeline" className="lg:col-span-3">
+        <SectionPanel title="Status timeline" className="lg:col-span-4">
           {(history ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">No status changes recorded.</p>
           ) : (

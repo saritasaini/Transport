@@ -22,11 +22,11 @@ export const NAV_GROUPS: { label: string; modules: AppModule[] }[] = [
   { label: "Overview", modules: ["dashboard"] },
   {
     label: "Operations",
-    modules: ["trips", "drivers", "vehicles", "challans", "parties", "expenses"],
+    modules: ["trips", "drivers", "vehicles", "challans", "parties"],
   },
   {
     label: "Finance",
-    modules: ["payments", "rentals", "reports", "tally"],
+    modules: ["payments", "job_sheet", "rentals", "reports", "tally"],
   },
   {
     label: "Admin",
@@ -37,12 +37,12 @@ export const NAV_GROUPS: { label: string; modules: AppModule[] }[] = [
 export const ROLE_DEFAULT_MODULES: Record<UserRole, AppModule[]> = {
   super_admin: [
     "dashboard", "trips", "drivers", "vehicles", "challans", "parties", "expenses",
-    "payments", "rentals", "reports", "notifications", "branches", "users",
+    "payments", "job_sheet", "rentals", "reports", "notifications", "branches", "users",
     "tally", "recovery",
   ],
   transporter_admin: [
     "dashboard", "trips", "drivers", "vehicles", "challans", "parties", "expenses",
-    "payments", "rentals", "reports", "notifications", "branches", "users",
+    "payments", "job_sheet", "rentals", "reports", "notifications", "branches", "users",
     "tally", "recovery",
   ],
   sub_admin: ["dashboard"],
@@ -61,6 +61,7 @@ export const MODULE_ROUTES: Record<AppModule, string> = {
   parties: "/dashboard/parties",
   expenses: "/dashboard/expenses",
   payments: "/dashboard/payments",
+  job_sheet: "/dashboard/job-sheet",
   rentals: "/dashboard/rentals",
   reports: "/dashboard/reports",
   notifications: "/dashboard/notifications",
@@ -79,6 +80,7 @@ export const MODULE_LABELS: Record<AppModule, string> = {
   parties: "Customers & Parties",
   expenses: "Expenses",
   payments: "Payments",
+  job_sheet: "Job Sheet & Expenses",
   rentals: "Rent In / Out",
   reports: "Reports",
   notifications: "Notifications",

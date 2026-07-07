@@ -23,6 +23,7 @@ import {
   Shield,
   ChevronsLeft,
   ChevronsRight,
+  ReceiptText,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const ICONS: Partial<Record<AppModule, LucideIcon>> = {
   branches: Building2, 
   users: Users, 
   tally: FileSpreadsheet,
+  job_sheet: ReceiptText,
   recovery: Archive,
 };
 
